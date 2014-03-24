@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import random
 
 # Easy to read representation for each cardinal direction.
@@ -120,6 +121,41 @@ class Maze(object):
             if E not in cell and x + 1 < self.width:
                 str_matrix[y][x + 1] = ' '
 
+        def g(x, y):
+            if 0 <= x < len(str_matrix[0]) and 0 <= y < len(str_matrix):
+                return str_matrix[y][x] != ' '
+            else:
+                return False
+
+        for y, line in enumerate(str_matrix):
+            for x, char in enumerate(line):
+                if not g(x, y):
+                    continue
+
+                connections = set((N, S, E, W))
+                if not g(x, y + 1): connections.remove(S)
+                if not g(x, y - 1): connections.remove(N)
+                if not g(x + 1, y): connections.remove(E)
+                if not g(x - 1, y): connections.remove(W)
+
+                str_matrix[y][x] = {'ensw': '┼',
+                                    'ens': '├',
+                                    'enw': '┴',
+                                    'esw': '┬',
+                                    'es': '┌',
+                                    'en': '└',
+                                    'ew': '─',
+                                    'e': '╶',
+                                    'nsw': '┤',
+                                    'ns': '│',
+                                    'nw': '┘',
+                                    'sw': '┐',
+                                    's': '╷',
+                                    'n': '╵',
+                                    'w': '╴',
+                                    '': '?',
+                                   }[''.join(sorted(connections))]
+
         return '\n'.join(''.join(line) for line in str_matrix) + '\n'
 
     def randomize(self):
@@ -177,7 +213,7 @@ class MazeGame(object):
 
         while self.player != self.target:
             console.display(str(self.maze))
-            self._display(self.player, '!')
+            self._display(self.player, '@')
             self._display(self.target, '$')
 
             key = console.get_valid_key(['up', 'down', 'left', 'right', 'q'])
@@ -201,7 +237,7 @@ class MazeGame(object):
 if __name__ == '__main__':
     import console
     try:
-        while MazeGame(10, 10).play(): pass
+        while MazeGame(100, 15).play(): pass
     except:
         import traceback
         traceback.print_exc(file=open('error_log.txt', 'a'))
