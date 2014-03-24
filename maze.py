@@ -151,10 +151,8 @@ class MazeGame(object):
     def __init__(self, width, height):
         self.maze = Maze(width, height)
         self.maze.randomize()
-        self.player = self.get_random_position()
-        self.target = self.get_random_position()
 
-    def get_random_position(self):
+    def _get_random_position(self):
         """
         Returns a random position on the maze.
         """
@@ -174,6 +172,9 @@ class MazeGame(object):
         Starts an interactive game on this maze. Returns True if the user won,
         or False if she quit the game by pressing "q".
         """
+        self.player = self._get_random_position()
+        self.target = self._get_random_position()
+
         while self.player != self.target:
             console.display(str(self.maze))
             self._display(self.player, '!')
