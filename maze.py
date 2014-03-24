@@ -145,6 +145,9 @@ class Maze(object):
                     
 
 class MazeGame(object):
+    """
+    Class for interactively playing random maze games.
+    """
     def __init__(self, width, height):
         self.maze = Maze(width, height)
         self.maze.randomize()
@@ -152,19 +155,32 @@ class MazeGame(object):
         self.target = self.get_random_position()
 
     def get_random_position(self):
+        """
+        Returns a random position on the maze.
+        """
         return (random.randrange(0, self.maze.width),
                 random.randrange(0, self.maze.height))
 
-    def display(self, pos, value):
+    def _display(self, pos, value):
+        """
+        Displays a value on the screen from an x and y maze positions.
+        """
         x, y = pos
+        # position * 2 + 1 because that's how the maze is displayed.
         console.set_display(y * 2 + 1, x * 2 + 1, value)
 
     def play(self):
+        """
+        Starts an interactive game on this maze. Returns True if the user won,
+        or False if she quit the game by pressing "q".
+        """
         while self.player != self.target:
             console.display(str(self.maze))
-            self.display(self.player, '!')
-            self.display(self.target, '$')
+            self._display(self.player, '!')
+            self._display(self.target, '$')
+
             key = console.get_valid_key(['up', 'down', 'left', 'right', 'q'])
+
             if key == 'q':
                 return False
 
@@ -172,6 +188,7 @@ class MazeGame(object):
                                      'down': (S, 0, 1),
                                      'left': (W, -1, 0),
                                      'right': (E, 1, 0)}[key]
+
             current_cell = self.maze[self.player]
             if direction not in current_cell:
                 self.player = (self.player[0] + difx, self.player[1] + dify)
