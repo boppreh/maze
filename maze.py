@@ -66,9 +66,6 @@ class Maze(object):
             for x in range(self.width):
                 self.cells.append(Cell(x, y, [N, S, E, W]))
 
-        #for cell in self.cells:
-        #    cell.walls.append(random.choice([N, S, W, E]))
-
     def __getitem__(self, index):
         """
         Returns the cell at index = (x, y).
@@ -128,6 +125,8 @@ class Maze(object):
     def randomize(self):
         """
         Knocks down random walls to build a random perfect maze.
+
+        Algorithm from http://mazeworks.com/mazegen/mazetut/index.htm
         """
         cell_stack = []
         cell = random.choice(self.cells)
@@ -145,9 +144,47 @@ class Maze(object):
                 cell = cell_stack.pop()
                     
 
+class MazeGame(object):
+    def __init__(self, width, height):
+        self.maze = Maze(width, height)
+        self.maze.randomize()
+        self.player = self.get_random_position()
+        self.target = self.get_random_position()
+
+    def get_random_position(self):
+        return (random.randrange(0, self.maze.width),
+                random.randrange(0, self.maze.height))
+
+    def display(self, pos, value):
+        x, y = pos
+        console.set_display(y * 2 + 1, x * 2 + 1, value)
+
+    def play(self):
+        while self.player != self.target:
+            console.display(str(self.maze))
+            self.display(self.player, '!')
+            self.display(self.target, '$')
+            key = console.get_valid_key(['up', 'down', 'left', 'right', 'q'])
+            if key == 'q':
+                return False
+
+            direction, difx, dify = {'up': (N, 0, -1),
+                                     'down': (S, 0, 1),
+                                     'left': (W, -1, 0),
+                                     'right': (E, 1, 0)}[key]
+            current_cell = self.maze[self.player]
+            if direction not in current_cell:
+                self.player = (self.player[0] + difx, self.player[1] + dify)
+
+        console.display('You win!')
+        console.get_key()
+        return True
+
 if __name__ == '__main__':
-    m = Maze()
-    print(m)
-    print()
-    m.randomize()
-    print(m)
+    import console
+    try:
+        while MazeGame(10, 10).play(): pass
+    except:
+        import traceback
+        traceback.print_exc(file=open('error_log.txt', 'a'))
+        
