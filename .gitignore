@@ -1,3 +1,6 @@
+# Vim swap file
+*.swp
+
 *.py[cod]
 
 # C extensions
