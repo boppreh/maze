@@ -56,6 +56,24 @@ class Maze(object):
     """
     Maze class containing full board and maze generation algorithms.
     """
+
+    # Unicode character for a wall with other walls in the given directions.
+    UNICODE_BY_CONNECTIONS = {'ensw': '┼',
+                              'ens': '├',
+                              'enw': '┴',
+                              'esw': '┬',
+                              'es': '┌',
+                              'en': '└',
+                              'ew': '─',
+                              'e': '╶',
+                              'nsw': '┤',
+                              'ns': '│',
+                              'nw': '┘',
+                              'sw': '┐',
+                              's': '╷',
+                              'n': '╵',
+                              'w': '╴'}
+
     def __init__(self, width=20, height=10):
         """
         Creates a new maze with the given sizes, with all walls standing.
@@ -89,21 +107,22 @@ class Maze(object):
             if neighbor is not None:
                 yield neighbor
 
-    def __repr__(self):
+    def _to_str_matrix(self):
         """
-        Returns a pretty printed visual representation of this maze. Example:
+        Returns a matrix with a pretty printed visual representation of this
+        maze. Example 5x5:
 
-        OOOOOOOOOOOOOOOOOOOOO
-        O O           O     O
-        O O OOO O OOOOO OOO O
-        O     O O O     O   O
-        O OOOOO OOO OOOOO O O
-        O O O O   O O   O O O
-        O O O O O O O OOO O O
-        O O O O O     O   O O
-        O O O OOOOOOOOO OOO O
-        O   O           O   O
-        OOOOOOOOOOOOOOOOOOOOO
+        OOOOOOOOOOO
+        O       O O
+        OOO OOO O O
+        O O   O   O
+        O OOO OOO O
+        O   O O   O
+        OOO O O OOO
+        O   O O O O
+        O OOO O O O
+        O     O   O
+        OOOOOOOOOOO
         """
         str_matrix = [['O'] * (self.width * 2 + 1)
                       for i in range(self.height * 2 + 1)]
@@ -113,21 +132,75 @@ class Maze(object):
             y = cell.y * 2 + 1
             str_matrix[y][x] = ' '
             if N not in cell and y > 0:
-                str_matrix[y - 1][x] = ' '
+                str_matrix[y - 1][x + 0] = ' '
             if S not in cell and y + 1 < self.width:
-                str_matrix[y + 1][x] = ' '
+                str_matrix[y + 1][x + 0] = ' '
             if W not in cell and x > 0:
                 str_matrix[y][x - 1] = ' '
             if E not in cell and x + 1 < self.width:
                 str_matrix[y][x + 1] = ' '
 
+        return str_matrix
+
+    def __repr__(self):
+        """
+        Returns an Unicode representation of the maze. Size is doubled
+        horizontally to avoid a stretched look. Example 5x5:
+
+        ┌───┬───────┬───────┐
+        │   │       │       │
+        │   │   ╷   ╵   ╷   │
+        │   │   │       │   │
+        │   │   └───┬───┘   │
+        │   │       │       │
+        │   └───────┤   ┌───┤
+        │           │   │   │
+        │   ╷   ╶───┘   ╵   │
+        │   │               │
+        └───┴───────────────┘
+        """
+        # Starts with regular representation. Looks stretched because chars are
+        # twice as high as they are wide (look at docs example in
+        # `Maze._to_str_matrix`).
+        skinny_matrix = self._to_str_matrix()
+
+        # Simply duplicate each character in each line.
+        double_wide_matrix = []
+        for line in skinny_matrix:
+            double_wide_matrix.append([])
+            for char in line:
+                double_wide_matrix[-1].append(char)
+                double_wide_matrix[-1].append(char)
+
+        # The last two chars of each line are walls, and we will need only one.
+        # So we remove the last char of each line.
+        matrix = [line[:-1] for line in double_wide_matrix]
+
         def g(x, y):
-            if 0 <= x < len(str_matrix[0]) and 0 <= y < len(str_matrix):
-                return str_matrix[y][x] != ' '
+            """
+            Returns True if there is a wall at (x, y). Values outside the valid
+            range always return false.
+
+            This is a temporary helper function.
+            """
+            if 0 <= x < len(matrix[0]) and 0 <= y < len(matrix):
+                return matrix[y][x] != ' '
             else:
                 return False
 
-        for y, line in enumerate(str_matrix):
+        # Fix double wide walls, finally giving the impression of a symmetric
+        # maze.
+        for y, line in enumerate(matrix):
+            for x, char in enumerate(line):
+                if not g(x, y) and g(x - 1, y):
+                    matrix[y][x - 1] = ' '
+
+        # Right now the maze has the correct aspect ratio, but is still using
+        # 'O' to represent walls.
+
+        # Finally we replace the walls with Unicode characters depending on
+        # their context.
+        for y, line in enumerate(matrix):
             for x, char in enumerate(line):
                 if not g(x, y):
                     continue
@@ -138,25 +211,13 @@ class Maze(object):
                 if not g(x + 1, y): connections.remove(E)
                 if not g(x - 1, y): connections.remove(W)
 
-                str_matrix[y][x] = {'ensw': '┼',
-                                    'ens': '├',
-                                    'enw': '┴',
-                                    'esw': '┬',
-                                    'es': '┌',
-                                    'en': '└',
-                                    'ew': '─',
-                                    'e': '╶',
-                                    'nsw': '┤',
-                                    'ns': '│',
-                                    'nw': '┘',
-                                    'sw': '┐',
-                                    's': '╷',
-                                    'n': '╵',
-                                    'w': '╴',
-                                    '': '?',
-                                   }[''.join(sorted(connections))]
+                str_connections = ''.join(sorted(connections))
+                # Note we are changing the matrix we are reading. We need to be
+                # careful as to not break the `g` function implementation.
+                matrix[y][x] = Maze.UNICODE_BY_CONNECTIONS[str_connections]
 
-        return '\n'.join(''.join(line) for line in str_matrix) + '\n'
+        # Simple double join to transform list of lists into string.
+        return '\n'.join(''.join(line) for line in matrix) + '\n'
 
     def randomize(self):
         """
@@ -178,15 +239,23 @@ class Maze(object):
                 n_visited_cells += 1
             else:
                 cell = cell_stack.pop()
+
+    @staticmethod
+    def generate(width=20, height=10):
+        """
+        Returns a new random perfect maze with the given sizes.
+        """
+        m = Maze(width, height)
+        m.randomize()
+        return m
                     
 
 class MazeGame(object):
     """
     Class for interactively playing random maze games.
     """
-    def __init__(self, width, height):
-        self.maze = Maze(width, height)
-        self.maze.randomize()
+    def __init__(self, maze):
+        self.maze = maze or Maze.generate()
 
     def _get_random_position(self):
         """
@@ -200,21 +269,22 @@ class MazeGame(object):
         Displays a value on the screen from an x and y maze positions.
         """
         x, y = pos
-        # position * 2 + 1 because that's how the maze is displayed.
-        console.set_display(y * 2 + 1, x * 2 + 1, value)
+        # Double x position because displayed maze is double-wide.
+        console.set_display(y * 2 + 1, x * 4 + 2, value)
 
     def play(self):
         """
-        Starts an interactive game on this maze. Returns True if the user won,
-        or False if she quit the game by pressing "q".
+        Starts an interactive game on this maze, with random starting and goal
+        positions. Returns True if the user won, or False if she quit the game
+        by pressing "q".
         """
-        self.player = self._get_random_position()
-        self.target = self._get_random_position()
+        player = self._get_random_position()
+        target = self._get_random_position()
 
-        while self.player != self.target:
+        while player != target:
             console.display(str(self.maze))
-            self._display(self.player, '@')
-            self._display(self.target, '$')
+            self._display(player, '@')
+            self._display(target, '$')
 
             key = console.get_valid_key(['up', 'down', 'left', 'right', 'q'])
 
@@ -226,9 +296,9 @@ class MazeGame(object):
                                      'left': (W, -1, 0),
                                      'right': (E, 1, 0)}[key]
 
-            current_cell = self.maze[self.player]
+            current_cell = self.maze[player]
             if direction not in current_cell:
-                self.player = (self.player[0] + difx, self.player[1] + dify)
+                player = (player[0] + difx, player[1] + dify)
 
         console.display('You win!')
         console.get_key()
@@ -237,7 +307,7 @@ class MazeGame(object):
 if __name__ == '__main__':
     import console
     try:
-        while MazeGame(100, 15).play(): pass
+        while MazeGame(Maze.generate(20, 10)).play(): pass
     except:
         import traceback
         traceback.print_exc(file=open('error_log.txt', 'a'))
