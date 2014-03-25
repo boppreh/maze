@@ -305,9 +305,20 @@ class MazeGame(object):
         return True
 
 if __name__ == '__main__':
+    import sys
+    if len(sys.argv) > 1:
+        width = int(sys.argv[1])
+        if len(sys.argv) > 2:
+            height = int(sys.argv[2])
+        else:
+            height = width
+    else:
+        width = 20
+        height = 10
+
     import console
     try:
-        while MazeGame(Maze.generate(20, 10)).play(): pass
+        while MazeGame(Maze.generate(width, height)).play(): pass
     except:
         import traceback
         traceback.print_exc(file=open('error_log.txt', 'a'))
