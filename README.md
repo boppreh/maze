@@ -12,7 +12,7 @@ Usage:
 - `python maze.py 40 15` (specify size 40x15)
 - `python maze.py 20` (square maze 20x20)
 
-Example:
+Example (don't worry, the lines look solid on the command line):
 
     python maze.py 18 12
 
