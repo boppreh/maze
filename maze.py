@@ -131,14 +131,10 @@ class Maze(object):
             x = cell.x * 2 + 1
             y = cell.y * 2 + 1
             str_matrix[y][x] = ' '
-            if N not in cell and y > 0:
+            if N not in cell and cell.y > 0:
                 str_matrix[y - 1][x + 0] = ' '
-            if S not in cell and y + 1 < self.width:
-                str_matrix[y + 1][x + 0] = ' '
-            if W not in cell and x > 0:
+            if W not in cell and cell.x > 0:
                 str_matrix[y][x - 1] = ' '
-            if E not in cell and x + 1 < self.width:
-                str_matrix[y][x + 1] = ' '
 
         return str_matrix
 
